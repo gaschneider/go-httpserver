@@ -16,6 +16,7 @@ func main() {
 	serveMux.Handle("/app/", config.middlewareMetricsInc(fileServerHandler))
 	serveMux.HandleFunc("GET /admin/metrics", config.displayCountRequestsHandler)
 	serveMux.HandleFunc("POST /admin/reset", config.resetCountRequestsHandler)
+	serveMux.HandleFunc("POST /api/validate_chirp", validateChirpHandler)
 
 	serveMux.HandleFunc("GET /api/healthz", healthHandler)
 
