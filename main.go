@@ -1,22 +1,41 @@
 package main
 
 import (
+	"database/sql"
 	"net/http"
+	"os"
 	"sync/atomic"
+
+	"github.com/gaschneider/go/httpserver/internal/database"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
+	db             *database.Queries
+	platform       string
 }
 
 func main() {
+	godotenv.Load()
+	dbURL := os.Getenv("DB_URL")
+	platform := os.Getenv("PLATFORM")
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		return
+	}
+
+	dbQueries := database.New(db)
+
 	serveMux := http.NewServeMux()
-	config := apiConfig{fileserverHits: atomic.Int32{}}
+	config := apiConfig{fileserverHits: atomic.Int32{}, db: dbQueries, platform: platform}
 	fileServerHandler := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
 	serveMux.Handle("/app/", config.middlewareMetricsInc(fileServerHandler))
 	serveMux.HandleFunc("GET /admin/metrics", config.displayCountRequestsHandler)
 	serveMux.HandleFunc("POST /admin/reset", config.resetCountRequestsHandler)
 	serveMux.HandleFunc("POST /api/validate_chirp", validateChirpHandler)
+	serveMux.HandleFunc("POST /api/users", config.createUsersHandler)
 
 	serveMux.HandleFunc("GET /api/healthz", healthHandler)
 
