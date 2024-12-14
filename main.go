@@ -41,6 +41,8 @@ func main() {
 	serveMux.HandleFunc("GET /api/chirps/{chirpID}", config.getChirpHandler)
 	serveMux.HandleFunc("POST /api/users", config.createUsersHandler)
 	serveMux.HandleFunc("POST /api/login", config.loginUserHandler)
+	serveMux.HandleFunc("POST /api/refresh", config.refreshTokenHandler)
+	serveMux.HandleFunc("POST /api/revoke", config.revokeRefreshTokenHandler)
 
 	serveMux.HandleFunc("GET /api/healthz", healthHandler)
 
