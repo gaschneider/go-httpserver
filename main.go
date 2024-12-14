@@ -15,12 +15,14 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	platform       string
+	secret         string
 }
 
 func main() {
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
+	secret := os.Getenv("SECRET")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		return
@@ -29,7 +31,7 @@ func main() {
 	dbQueries := database.New(db)
 
 	serveMux := http.NewServeMux()
-	config := apiConfig{fileserverHits: atomic.Int32{}, db: dbQueries, platform: platform}
+	config := apiConfig{fileserverHits: atomic.Int32{}, db: dbQueries, platform: platform, secret: secret}
 	fileServerHandler := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
 	serveMux.Handle("/app/", config.middlewareMetricsInc(fileServerHandler))
 	serveMux.HandleFunc("GET /admin/metrics", config.displayCountRequestsHandler)
@@ -38,6 +40,7 @@ func main() {
 	serveMux.HandleFunc("GET /api/chirps", config.getAllChirpHandler)
 	serveMux.HandleFunc("GET /api/chirps/{chirpID}", config.getChirpHandler)
 	serveMux.HandleFunc("POST /api/users", config.createUsersHandler)
+	serveMux.HandleFunc("POST /api/login", config.loginUserHandler)
 
 	serveMux.HandleFunc("GET /api/healthz", healthHandler)
 

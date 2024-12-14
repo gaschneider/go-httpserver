@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gaschneider/go/httpserver/internal/auth"
 	"github.com/gaschneider/go/httpserver/internal/database"
 	"github.com/google/uuid"
 )
@@ -38,14 +39,25 @@ type ChirpDTO struct {
 }
 
 func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, 401, "Unauthorized")
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, cfg.secret)
+	if err != nil {
+		respondWithError(w, 401, "Unauthorized 2")
+		return
+	}
+
 	type parameters struct {
-		Body   string    `json:"body"`
-		UserId uuid.UUID `json:"user_id"`
+		Body string `json:"body"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		log.Printf("Error decoding parameters: %s", err)
 		respondWithError(w, 500, "Something went wrong")
@@ -59,7 +71,7 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 
 	chirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{
 		Body:   replaceBadWordsInChirp(params.Body),
-		UserID: params.UserId,
+		UserID: userID,
 	})
 
 	if err != nil {
