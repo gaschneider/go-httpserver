@@ -36,13 +36,19 @@ func main() {
 	serveMux.Handle("/app/", config.middlewareMetricsInc(fileServerHandler))
 	serveMux.HandleFunc("GET /admin/metrics", config.displayCountRequestsHandler)
 	serveMux.HandleFunc("POST /admin/reset", config.resetCountRequestsHandler)
+
 	serveMux.HandleFunc("POST /api/chirps", config.createChirpHandler)
 	serveMux.HandleFunc("GET /api/chirps", config.getAllChirpHandler)
 	serveMux.HandleFunc("GET /api/chirps/{chirpID}", config.getChirpHandler)
+	serveMux.HandleFunc("DELETE /api/chirps/{chirpID}", config.deleteChirpHandler)
+
 	serveMux.HandleFunc("POST /api/users", config.createUsersHandler)
 	serveMux.HandleFunc("POST /api/login", config.loginUserHandler)
 	serveMux.HandleFunc("POST /api/refresh", config.refreshTokenHandler)
 	serveMux.HandleFunc("POST /api/revoke", config.revokeRefreshTokenHandler)
+	serveMux.HandleFunc("PUT /api/users", config.updateUserHandler)
+
+	serveMux.HandleFunc("POST /api/polka/webhooks", config.handlePolkaEvents)
 
 	serveMux.HandleFunc("GET /api/healthz", healthHandler)
 
