@@ -5,11 +5,18 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gaschneider/go/httpserver/internal/auth"
 	"github.com/gaschneider/go/httpserver/internal/database"
 	"github.com/google/uuid"
 )
 
 func (cfg *apiConfig) handlePolkaEvents(w http.ResponseWriter, r *http.Request) {
+	apiKey, err := auth.GetAPIKey(r.Header)
+	if err != nil || apiKey != cfg.polkaKey {
+		respondWithError(w, 401, "Unauthorized")
+		return
+	}
+
 	type bodyData struct {
 		UserId uuid.UUID `json:"user_id"`
 	}
@@ -20,7 +27,7 @@ func (cfg *apiConfig) handlePolkaEvents(w http.ResponseWriter, r *http.Request) 
 
 	decoder := json.NewDecoder(r.Body)
 	params := body{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		log.Printf("Error decoding parameters: %s", err)
 		respondWithError(w, 500, "Something went wrong")

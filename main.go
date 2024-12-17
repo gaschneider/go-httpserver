@@ -16,6 +16,7 @@ type apiConfig struct {
 	db             *database.Queries
 	platform       string
 	secret         string
+	polkaKey       string
 }
 
 func main() {
@@ -23,6 +24,7 @@ func main() {
 	dbURL := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
 	secret := os.Getenv("SECRET")
+	polkaKey := os.Getenv("POLKA_KEY")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		return
@@ -31,7 +33,7 @@ func main() {
 	dbQueries := database.New(db)
 
 	serveMux := http.NewServeMux()
-	config := apiConfig{fileserverHits: atomic.Int32{}, db: dbQueries, platform: platform, secret: secret}
+	config := apiConfig{fileserverHits: atomic.Int32{}, db: dbQueries, platform: platform, secret: secret, polkaKey: polkaKey}
 	fileServerHandler := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
 	serveMux.Handle("/app/", config.middlewareMetricsInc(fileServerHandler))
 	serveMux.HandleFunc("GET /admin/metrics", config.displayCountRequestsHandler)

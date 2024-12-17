@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -91,11 +93,33 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (cfg *apiConfig) getAllChirpHandler(w http.ResponseWriter, r *http.Request) {
-	chirps, err := cfg.db.GetAllChirps(r.Context())
+	authorId := r.URL.Query().Get("author_id")
+	sortDirection := r.URL.Query().Get("sort")
+
+	var chirps []database.Chirp
+	var err error
+
+	if authorId != "" {
+		userId, uuidErr := uuid.Parse(authorId)
+		if uuidErr != nil {
+			respondWithError(w, 400, "Invalid author id")
+			return
+		}
+		chirps, err = cfg.db.GetAllChirpsByUserId(r.Context(), userId)
+	} else {
+		chirps, err = cfg.db.GetAllChirps(r.Context())
+	}
 
 	if err != nil {
+		fmt.Printf("Error: %v\n", err)
 		respondWithError(w, 400, "Error retrieving chirps")
 		return
+	}
+
+	if strings.ToLower(sortDirection) == "desc" {
+		sort.Slice(chirps, func(i, j int) bool {
+			return chirps[i].CreatedAt.After(chirps[j].CreatedAt)
+		})
 	}
 
 	respBody := make([]ChirpDTO, 0)
